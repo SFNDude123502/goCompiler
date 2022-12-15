@@ -1,7 +1,9 @@
 package main
 
 import (
+	"log"
 	"os"
+	"os/exec"
 )
 
 func check(e error) {
@@ -12,15 +14,26 @@ func check(e error) {
 
 func main() {
 
-	file, err := os.ReadFile("./wassup.txt")
+	file, err := os.ReadFile("./test.gasm")
 	check(err)
 
-	stream, err := tokenize(file)
+	stream, err := tokenizeFile(file)
 
 	if err != nil {
 		panic(err)
 	}
 
-	stream[0].funcPrint()
-	stream[1].varPrint()
+	parsed, imports := parse(stream)
+
+	for _, imp := range imports {
+		parsed = "import  \"" + imp + "\" \n" + parsed
+	}
+	parsed = "package main\n" + parsed
+
+	os.WriteFile("./build/main.go", []byte(parsed), 0666)
+	cmd := exec.Command("go", "build", "build/main.go")
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
